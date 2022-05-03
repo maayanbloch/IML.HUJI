@@ -56,6 +56,10 @@ class Perceptron(BaseEstimator):
         self.callback_ = callback
         self.coefs_ = None
 
+    def __add_ones(self, X: np.ndarray) -> np.ndarray:
+        num_samples = len(X)
+        return np.c_[np.ones((num_samples, 1)), X]
+
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit a halfspace to to given samples. Iterate over given data as long as there exists a sample misclassified
@@ -73,7 +77,22 @@ class Perceptron(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.fit_intercept_`
         """
-        raise NotImplementedError()
+        samples, features = X.shape
+        self.coefs_ = np.zeros(features)
+        if self.include_intercept_:
+            self.coefs_ = np.zeros(features+1)
+            X = Perceptron.__add_ones(self, X)
+        self.fitted_ = True
+        for i in range(1,self.max_iter_):
+            y_pred = X @ self.coefs_
+            y_step = np.sign(y_pred *y)
+            miss_calc_args = np.argwhere(y_step <= 0)
+            if len(miss_calc_args) == 0:
+                break
+            self.callback_(self, X[0], y[0])
+            self.coefs_ = self.coefs_+  (y[miss_calc_args[0][0]] * X[miss_calc_args[0][0]])
+
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -89,7 +108,9 @@ class Perceptron(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        if self.include_intercept_:
+            X = Perceptron.__add_ones(self, X)
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -109,4 +130,5 @@ class Perceptron(BaseEstimator):
             Performance under missclassification loss function
         """
         from ...metrics import misclassification_error
-        raise NotImplementedError()
+        y_pred = np.sign(self._predict(X))
+        return misclassification_error(y, y_pred, normalize=False)

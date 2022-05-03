@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
+from ...metrics import misclassification_error
 from itertools import product
 
 
@@ -39,7 +40,112 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        # classes, count = np.unique(y, return_counts=True)
+        # n_samples, n_features = X.shape
+
+        #https://sefiks.com/2018/08/27/a-step-by-step-cart-decision-tree-example/
+
+
+
+    #https://programmer.group/python-implementation-of-cart-decision-tree-algorithm-detailed-comments.html
+        #getting first class indexes
+        # y_one = np.argwhere(y == classes[0])
+        # y_two = np.argwhere(y == classes[1])
+        # best_gini = 1
+        # best_split_point = 0
+        # j_of_best_feature = -1
+        # X_trans = X.T
+        # for i in range(n_features):
+        #     feature_vals = np.unique(X_trans[i])
+        #     Gini = {}
+        #     for val in feature_vals:
+        #         left_of_val = np.argwhere(X_trans[i] >= val)
+        #         right_of_val = np.argwhere(X_trans[i] < val)
+        #         prob1 = len(left_of_val) / float(n_samples)
+        #         prob2 = len(right_of_val) / float(n_samples)
+        #         classes1, count1 = np.unique(y[left_of_val], return_counts=True)
+        #         classes2, count2 = np.unique(y[right_of_val], return_counts=True)
+        #         gini_left = 1 - np.sum(np.power(count1, 2))
+        #         gini_right = 1 - np.sum(np.power(count2, 2))
+        #         Gini[val] = (prob1 * gini_left) + (prob2 * gini_right)
+        #         if Gini[val] < best_gini:
+        #             best_gini = Gini[val]
+        #             self.j_ = i
+        #             self.threshold_ = val
+        #             self.sign_ = np.sum(left_of_val) #get positive or negative
+        # self.fitted_ = True
+
+        # classes, count = np.unique(y, return_counts=True)
+        n_samples, n_features = X.shape
+        y_one_index = np.argwhere(y == 1)
+        y_minus_index = np.argwhere(y == -1)
+        one_amount = len(y_one_index)
+        minus_amount = len(y_minus_index)
+        feature_thresh = X[0]
+        label_sign = np.ones(n_features)
+        loss = np.full(n_features, n_samples) #loss is number of samples at start
+        for f in n_features:
+            column = X[:,f] #feature column
+            feature_thresh[f], loss[f], label_sign[f] = self.__fitting_thres_search(column, y)
+            if (loss[f] > 0.5): #of the sign should be the opossite
+                label_sign[f] = -1
+        self.j_ = np.argmin(loss)
+        self.sign_ = label_sign[self.j_]
+        self.threshold_ = feature_thresh[self.j_]
+        self.fitted_ = True
+
+
+#helper function i added
+    def __fitting_thres_search(self, values: np.ndarray, labels: np.ndarray) -> float:
+        """
+        Given a feature vector and labels, find a threshold by which to perform a split
+        The threshold is found according to the value minimizing the misclassification
+        error along this feature
+
+        Parameters
+        ----------
+        values: ndarray of shape (n_samples,)
+            A feature vector to find a splitting threshold for
+
+        labels: ndarray of shape (n_samples,)
+            The labels to compare against
+
+        Returns
+        -------
+        thr: float
+            Threshold by which to perform split
+
+        thr_err: float between 0 and 1
+            Misclassificaiton error of returned threshold
+
+        sign: int -1 or 1
+
+        Notes
+        -----
+        For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
+        which equal to or above the threshold are predicted as `sign`
+        """
+        loss = len(values)
+        thresh = values[0]
+        sign = 1
+        feature_thresh_options = set(values)
+        for thresh_opt in feature_thresh_options:
+            left = np.argwhere(values >= thresh_opt)
+            right = np.argwhere(values < thresh_opt)
+            left_sign = np.sign(sum(y[left]))
+            if (left_sign == 0):  # if same amount of both labels
+                left_sign = 1
+            y_pred = np.full(len(values), left_sign)
+            y_pred[right] = (-1) * left_sign
+            curr_loss = misclassification_error(labels, y_pred)
+            # curr_loss = ((y[left] != left_sign).sum() + (
+            #             y[right] == left_sign).sum()) /len(values) #miss_class_error
+            if (curr_loss < loss):
+                loss = curr_loss
+                thresh = thresh_opt
+                sign = left_sign
+        return thresh, loss, sign
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -63,7 +169,15 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        # X_trans = X.T
+        # n_samples, n_features = X.shape
+        feature_vals = X[:,self.j_]
+        y_pred = np.full(len(feature_vals), self.sign_)
+        neg_indexes = np.argwhere(feature_vals < self.threshold_)
+        y_pred[neg_indexes] = (-1) * self.sign_
+        return y_pred
+
+
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> float:
         """
@@ -95,7 +209,25 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        loss = len(values)
+        thresh = values[0]
+        feature_thresh_options = set(values)
+        for thresh_opt in feature_thresh_options:
+            left = np.argwhere(values >= thresh_opt)
+            right = np.argwhere(values < thresh_opt)
+            # left_sign = np.sign(sum(y[left]))
+            # if (left_sign == 0):  # if same amount of both labels
+            #     left_sign = 1
+            y_pred = np.full(len(values), sign)
+            y_pred[right] = (-1)* sign
+            curr_loss = misclassification_error(labels, y_pred)
+            # curr_loss = ((y[left] != left_sign).sum() + (
+            #             y[right] == left_sign).sum()) /len(values) #miss_class_error
+            if (curr_loss < loss):
+                loss = curr_loss
+                thresh = thresh_opt
+        return thresh, loss
+
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -114,4 +246,6 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        y_pred = self._predict(X)
+        loss = misclassification_error(y, y_pred)
+        return loss
