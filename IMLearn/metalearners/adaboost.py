@@ -56,7 +56,7 @@ class AdaBoost(BaseEstimator):
         n_samples = len(y)
         self.weights_ = np.zeros(self.iterations_)
         self.models_ = []
-        self.D_ = np.full(n_samples, (1/n_samples))
+        self.D_ = np.full(n_samples, (1/n_samples), dtype=float)
         for i in range(self.iterations_):
             self.models_.append(self.wl_())
             self.models_[i].fit(X, y*self.D_)
@@ -68,13 +68,14 @@ class AdaBoost(BaseEstimator):
             # best_stump.fit(X=X, y=(y*self.D_))
             # self.models_.append(best_stump)
             #log as ln
-            curr_loss = np.sum(curr_pred != y)
+            curr_loss = np.sum(curr_pred != np.sign(y*self.D_))
             self.weights_[i] = (0.5*(np.log((n_samples/curr_loss)-1)))
             self.D_ = self.D_ * (np.exp(((-1)*self.weights_[i])* y *(curr_pred)))
             norm_val = np.sum(self.D_)
             self.D_ /= norm_val #sample_w normalized
             # cur_data = np.random.choice(X, n_samples, p=sample_w)
         # self.D_ = sample_w
+        self.fitted_ = True
 
 
 

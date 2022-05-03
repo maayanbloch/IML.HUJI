@@ -83,11 +83,14 @@ class DecisionStump(BaseEstimator):
         one_amount = len(y_one_index)
         minus_amount = len(y_minus_index)
         feature_thresh = X[0]
-        label_sign = np.ones(n_features)
-        loss = np.full(n_features, n_samples) #loss is number of samples at start
+        label_sign = np.sign(feature_thresh)
+        loss = np.full(n_features, n_samples, dtype=float) #loss is number of samples at start
         for f in range(n_features):
             column = X[:,f] #feature column
-            feature_thresh[f], loss[f], label_sign[f] = self.__fitting_thres_search(column, y)
+            f_threshs = self.__fitting_thres_search(column, y)
+            feature_thresh[f] = f_threshs[0]
+            loss[f] = f_threshs[1]
+            label_sign[f] = f_threshs[2]
             # if (loss[f] > 0.5): #of the sign should be the opossite
             #     label_sign[f] = -1
         self.j_ = np.argmin(loss)
@@ -129,18 +132,24 @@ class DecisionStump(BaseEstimator):
         n_samples = len(values)
         loss = n_samples
         thresh = values[0]
-        sign = 1
+        sign = np.sign(thresh)
         feature_thresh_options = set(values)
         for thresh_opt in feature_thresh_options:
             left = np.argwhere(values >= thresh_opt)
             right = np.argwhere(values < thresh_opt)
-            left_sign = np.sign(sum(np.sign(labels[left])))
+            l = labels[left]
+            left_sign = np.sign(labels[left]).flatten()
+            summm = np.sign(np.sum(left_sign))
+            left_sign = summm
             if (left_sign == 0):  # if same amount of both labels
                 left_sign = 1
             y_pred = np.full(len(values), (-1)*left_sign)
             y_pred[left] = left_sign
-            pred_err = np.argwhere(np.sign(labels) != y_pred)
-            curr_loss = np.sum(labels[pred_err]) / n_samples
+            # curr_loss = np.sum(np.sign(labels) != y_pred) / n_samples
+            pred_err = np.argwhere(np.sign(labels) != y_pred).flatten()
+            # TODO: is normalised, check
+            curr_loss = np.sum(np.abs(labels[pred_err]))
+            # curr_loss = np.sum(np.sign(labels[pred_err])) / n_samples
             # pred_err = np.argwhere(np.sign(labels[right]) == y_pred)
             # curr_loss += np.sum(labels[pred_err])
             # curr_loss = ((y[left] != left_sign).sum() + (
@@ -223,9 +232,9 @@ class DecisionStump(BaseEstimator):
             #     left_sign = 1
             y_pred = np.full(len(values), (-1)*sign)
             y_pred[left] = sign
-            pred_err = np.argwhere(np.sign(labels) != y_pred)
+            pred_err = np.argwhere(np.sign(labels) != y_pred).flatten()
             # TODO: is normalised, check
-            curr_loss = np.sum(labels[pred_err]) / n_samples
+            curr_loss = np.sum(np.abs(labels[pred_err]))
             # curr_loss = misclassification_error(labels, y_pred)
             # curr_loss = ((y[left] != left_sign).sum() + (
             #             y[right] == left_sign).sum()) /len(values) #miss_class_error
@@ -254,8 +263,8 @@ class DecisionStump(BaseEstimator):
         """
         n_samples = len(X)
         y_pred = self._predict(X)
-        pred_err = np.argwhere(np.sign(y) != y_pred)
+        pred_err = np.argwhere(np.sign(y) != y_pred).flatten()
         #TODO: is normalised, check
-        loss = np.sum(y[pred_err]) / n_samples
+        loss = np.sum(np.abs(y[pred_err])) / n_samples
         # loss = misclassification_error(y, y_pred)
         return loss
