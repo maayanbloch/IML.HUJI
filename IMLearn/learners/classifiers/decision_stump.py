@@ -75,29 +75,58 @@ class DecisionStump(BaseEstimator):
         #             self.sign_ = np.sum(left_of_val) #get positive or negative
         # self.fitted_ = True
 
-        # classes, count = np.unique(y, return_counts=True)
         n_samples, n_features = X.shape
         y_sign = np.sign(y)
-        y_one_index = np.argwhere(y_sign == 1)
-        y_minus_index = np.argwhere(y_sign == -1)
-        one_amount = len(y_one_index)
-        minus_amount = len(y_minus_index)
         feature_thresh = X[0]
         label_sign = np.sign(feature_thresh)
-        loss = np.full(n_features, n_samples, dtype=float) #loss is number of samples at start
+        for i in range(n_features):
+            left = np.argwhere(X[:,i] >= feature_thresh[i])
+            label_sign[i] = self.__find_sign(left, y)
+        loss = np.full(n_features, n_samples, dtype=float)
         for f in range(n_features):
-            column = X[:,f] #feature column
-            f_threshs = self.__fitting_thres_search(column, y)
+            values = X[:,f]
+            f_threshs = self.__fitting_thres_search(values, y)
             feature_thresh[f] = f_threshs[0]
             loss[f] = f_threshs[1]
             label_sign[f] = f_threshs[2]
-            # if (loss[f] > 0.5): #of the sign should be the opossite
-            #     label_sign[f] = -1
         self.j_ = np.argmin(loss)
         self.sign_ = label_sign[self.j_]
         self.threshold_ = feature_thresh[self.j_]
         self.fitted_ = True
 
+
+        # # classes, count = np.unique(y, return_counts=True)
+        # n_samples, n_features = X.shape
+        # y_sign = np.sign(y)
+        # y_one_index = np.argwhere(y_sign == 1)
+        # y_minus_index = np.argwhere(y_sign == -1)
+        # one_amount = len(y_one_index)
+        # minus_amount = len(y_minus_index)
+        # feature_thresh = X[0]
+        # label_sign = np.sign(feature_thresh)
+        # for i in range(n_features):
+        #     left = np.argwhere(X[:,i] >= feature_thresh[i])
+        #     label_sign[i] = self.__find_sign(left, y)
+        # loss = np.full(n_features, n_samples, dtype=float) #loss is number of samples at start
+        # for f in range(n_features):
+        #     column = X[:,f] #feature column
+        #     f_threshs = self.__fitting_thres_search(column, y)
+        #     feature_thresh[f] = f_threshs[0]
+        #     loss[f] = f_threshs[1]
+        #     label_sign[f] = f_threshs[2]
+        #     # if (loss[f] > 0.5): #of the sign should be the opossite
+        #     #     label_sign[f] = -1
+        # self.j_ = np.argmin(loss)
+        # self.sign_ = label_sign[self.j_]
+        # self.threshold_ = feature_thresh[self.j_]
+        # self.fitted_ = True
+
+#helper function i added
+    def __find_sign(self, left_args,y):
+        sign = np.sign(np.sum(y[left_args].flatten()))
+        if (sign == 0):
+            return 1
+        return sign
 
 #helper function i added
     def __fitting_thres_search(self, values: np.ndarray, labels: np.ndarray) -> np.ndarray:
@@ -132,17 +161,21 @@ class DecisionStump(BaseEstimator):
         n_samples = len(values)
         loss = n_samples
         thresh = values[0]
-        sign = np.sign(thresh)
+        left = np.argwhere(values >= thresh)
+        sign = self.__find_sign(left, labels)
+        # sign = np.sign(np.sum(labels[left].flatten()))
+        # sign = np.sign(thresh)
         feature_thresh_options = set(values)
         for thresh_opt in feature_thresh_options:
             left = np.argwhere(values >= thresh_opt)
-            right = np.argwhere(values < thresh_opt)
-            l = labels[left]
-            left_sign = np.sign(labels[left]).flatten()
-            summm = np.sign(np.sum(left_sign))
-            left_sign = summm
-            if (left_sign == 0):  # if same amount of both labels
-                left_sign = 1
+            # right = np.argwhere(values < thresh_opt)
+            # l = labels[left]
+            # left_sign = labels[left].flatten()
+            # summm = np.sign(np.sum(left_sign))
+            # left_sign = summm
+            # if (left_sign == 0):  # if same amount of both labels
+            #     left_sign = 1
+            left_sign = self.__find_sign(left, labels)
             y_pred = np.full(len(values), (-1)*left_sign)
             y_pred[left] = left_sign
             # curr_loss = np.sum(np.sign(labels) != y_pred) / n_samples
@@ -263,8 +296,8 @@ class DecisionStump(BaseEstimator):
         """
         n_samples = len(X)
         y_pred = self._predict(X)
-        pred_err = np.argwhere(np.sign(y) != y_pred).flatten()
+        pred_err = np.argwhere(np.sign(y) != y_pred)
         #TODO: is normalised, check
-        loss = np.sum(np.abs(y[pred_err])) / n_samples
+        loss = np.sum(np.abs(y[pred_err]))
         # loss = misclassification_error(y, y_pred)
         return loss

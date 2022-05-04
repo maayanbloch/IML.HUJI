@@ -59,6 +59,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     symbols = np.array(["circle", "square", "triangle-up"])
     test_for_symb = np.array(test_y +1, dtype=np.int)
     for t in T:
+        thresh_axis = ada.models_[t].j_
+        thresh_val = ada.models_[t].threshold_
         part_pred = ada.partial_predict(test_X, t)
         fig = go.Figure()
         y_true = np.array(y_true, dtype=np.int)

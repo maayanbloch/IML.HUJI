@@ -68,8 +68,9 @@ class AdaBoost(BaseEstimator):
             # best_stump.fit(X=X, y=(y*self.D_))
             # self.models_.append(best_stump)
             #log as ln
-            curr_loss = np.sum(curr_pred != np.sign(y*self.D_))
-            self.weights_[i] = (0.5*(np.log((n_samples/curr_loss)-1)))
+            # curr_loss = np.sum(curr_pred != np.sign(y*self.D_))
+            curr_loss = self.models_[i].loss(X, y*self.D_)
+            self.weights_[i] = (0.5*(np.log(((1-curr_loss)/curr_loss))))
             self.D_ = self.D_ * (np.exp(((-1)*self.weights_[i])* y *(curr_pred)))
             norm_val = np.sum(self.D_)
             self.D_ /= norm_val #sample_w normalized
