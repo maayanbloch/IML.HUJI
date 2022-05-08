@@ -76,123 +76,24 @@ class DecisionStump(BaseEstimator):
         # self.fitted_ = True
 
         n_samples, n_features = X.shape
-        y_sign = np.sign(y)
         feature_thresh = X[0]
         label_sign = np.sign(feature_thresh)
-        for i in range(n_features):
-            left = np.argwhere(X[:,i] >= feature_thresh[i])
-            label_sign[i] = self.__find_sign(left, y)
         loss = np.full(n_features, n_samples, dtype=float)
         for f in range(n_features):
             values = X[:,f]
-            f_threshs = self.__fitting_thres_search(values, y)
-            feature_thresh[f] = f_threshs[0]
-            loss[f] = f_threshs[1]
-            label_sign[f] = f_threshs[2]
+            f_threshs_one = self._find_threshold(values, y, 1)
+            f_threshs_minus = self._find_threshold(values, y, -1)
+            feature_thresh[f] = f_threshs_minus[0]
+            loss[f] = f_threshs_minus[1]
+            label_sign[f] = -1
+            if f_threshs_one[1] < f_threshs_minus[1]:
+                feature_thresh[f] = f_threshs_one[0]
+                loss[f] = f_threshs_one[1]
+                label_sign[f] = 1
         self.j_ = np.argmin(loss)
         self.sign_ = label_sign[self.j_]
         self.threshold_ = feature_thresh[self.j_]
         self.fitted_ = True
-
-
-        # # classes, count = np.unique(y, return_counts=True)
-        # n_samples, n_features = X.shape
-        # y_sign = np.sign(y)
-        # y_one_index = np.argwhere(y_sign == 1)
-        # y_minus_index = np.argwhere(y_sign == -1)
-        # one_amount = len(y_one_index)
-        # minus_amount = len(y_minus_index)
-        # feature_thresh = X[0]
-        # label_sign = np.sign(feature_thresh)
-        # for i in range(n_features):
-        #     left = np.argwhere(X[:,i] >= feature_thresh[i])
-        #     label_sign[i] = self.__find_sign(left, y)
-        # loss = np.full(n_features, n_samples, dtype=float) #loss is number of samples at start
-        # for f in range(n_features):
-        #     column = X[:,f] #feature column
-        #     f_threshs = self.__fitting_thres_search(column, y)
-        #     feature_thresh[f] = f_threshs[0]
-        #     loss[f] = f_threshs[1]
-        #     label_sign[f] = f_threshs[2]
-        #     # if (loss[f] > 0.5): #of the sign should be the opossite
-        #     #     label_sign[f] = -1
-        # self.j_ = np.argmin(loss)
-        # self.sign_ = label_sign[self.j_]
-        # self.threshold_ = feature_thresh[self.j_]
-        # self.fitted_ = True
-
-#helper function i added
-    def __find_sign(self, left_args,y):
-        sign = np.sign(np.sum(y[left_args].flatten()))
-        if (sign == 0):
-            return 1
-        return sign
-
-#helper function i added
-    def __fitting_thres_search(self, values: np.ndarray, labels: np.ndarray) -> np.ndarray:
-        """
-        Given a feature vector and labels, find a threshold by which to perform a split
-        The threshold is found according to the value minimizing the misclassification
-        error along this feature
-
-        Parameters
-        ----------
-        values: ndarray of shape (n_samples,)
-            A feature vector to find a splitting threshold for
-
-        labels: ndarray of shape (n_samples,)
-            The labels to compare against
-
-        Returns
-        -------
-        thr: float
-            Threshold by which to perform split
-
-        thr_err: float between 0 and 1
-            Misclassificaiton error of returned threshold
-
-        sign: int -1 or 1
-
-        Notes
-        -----
-        For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
-        which equal to or above the threshold are predicted as `sign`
-        """
-        n_samples = len(values)
-        loss = n_samples
-        thresh = values[0]
-        left = np.argwhere(values >= thresh)
-        sign = self.__find_sign(left, labels)
-        # sign = np.sign(np.sum(labels[left].flatten()))
-        # sign = np.sign(thresh)
-        feature_thresh_options = set(values)
-        for thresh_opt in feature_thresh_options:
-            left = np.argwhere(values >= thresh_opt)
-            # right = np.argwhere(values < thresh_opt)
-            # l = labels[left]
-            # left_sign = labels[left].flatten()
-            # summm = np.sign(np.sum(left_sign))
-            # left_sign = summm
-            # if (left_sign == 0):  # if same amount of both labels
-            #     left_sign = 1
-            left_sign = self.__find_sign(left, labels)
-            y_pred = np.full(len(values), (-1)*left_sign)
-            y_pred[left] = left_sign
-            # curr_loss = np.sum(np.sign(labels) != y_pred) / n_samples
-            pred_err = np.argwhere(np.sign(labels) != y_pred).flatten()
-            # TODO: is normalised, check
-            curr_loss = np.sum(np.abs(labels[pred_err]))
-            # curr_loss = np.sum(np.sign(labels[pred_err])) / n_samples
-            # pred_err = np.argwhere(np.sign(labels[right]) == y_pred)
-            # curr_loss += np.sum(labels[pred_err])
-            # curr_loss = ((y[left] != left_sign).sum() + (
-            #             y[right] == left_sign).sum()) /len(values) #miss_class_error
-            if (curr_loss < loss):
-                loss = curr_loss
-                thresh = thresh_opt
-                sign = left_sign
-        return np.array([thresh, loss, sign])
-
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -213,8 +114,6 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        # X_trans = X.T
-        # n_samples, n_features = X.shape
         feature_vals = X[:,self.j_]
         y_pred = np.full(len(feature_vals), self.sign_)
         neg_indexes = np.argwhere(feature_vals < self.threshold_)
@@ -254,27 +153,19 @@ class DecisionStump(BaseEstimator):
         which equal to or above the threshold are predicted as `sign`
         """
         n_samples = len(values)
+        sorted_args = np.argsort(values)
+        sorted_values = values[sorted_args]
+        sorted_labels = labels[sorted_args]
+        F = np.sum(np.abs(labels[np.argwhere(np.sign(labels) != sign)]))
         loss = n_samples
-        thresh = values[0]
-        feature_thresh_options = set(values)
-        for thresh_opt in feature_thresh_options:
-            left = np.argwhere(values >= thresh_opt)
-            right = np.argwhere(values < thresh_opt)
-            # left_sign = np.sign(sum(y[left]))
-            # if (left_sign == 0):  # if same amount of both labels
-            #     left_sign = 1
-            y_pred = np.full(len(values), (-1)*sign)
-            y_pred[left] = sign
-            pred_err = np.argwhere(np.sign(labels) != y_pred).flatten()
-            # TODO: is normalised, check
-            curr_loss = np.sum(np.abs(labels[pred_err]))
-            # curr_loss = misclassification_error(labels, y_pred)
-            # curr_loss = ((y[left] != left_sign).sum() + (
-            #             y[right] == left_sign).sum()) /len(values) #miss_class_error
-            if (curr_loss < loss):
-                loss = curr_loss
-                thresh = thresh_opt
+        thresh = sorted_values[0]
+        for thresh_opt in range(len(sorted_values)):
+            F = F + (sign)*sorted_labels[thresh_opt]
+            if (F < loss):
+                loss = F
+                thresh = sorted_values[thresh_opt]
         return thresh, loss
+
 
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:

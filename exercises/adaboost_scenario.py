@@ -43,7 +43,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     ada = AdaBoost(wl, n_learners).fit(train_X, train_y)
     train_err = []
     test_err = []
-    for i in range(n_learners):
+    for i in range(1,n_learners):
         train_err.append(ada.partial_loss(train_X, train_y, i))
         test_err.append(ada.partial_loss(test_X, test_y, i))
     # fig = go.Figure(data=[train_err, test_err], layout=go.Layout(title=go.layout.Title(test="train and test error")))
@@ -57,16 +57,22 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
     symbols = np.array(["circle", "square", "triangle-up"])
-    test_for_symb = np.array(test_y +1, dtype=np.int)
+    # test_for_symb = np.array(test_y +1, dtype=np.int)
+    y_true = np.array(test_y, dtype=np.int)
     for t in T:
-        thresh_axis = ada.models_[t].j_
-        thresh_val = ada.models_[t].threshold_
-        part_pred = ada.partial_predict(test_X, t)
+        thresh_axis = ada.models_[t-1].j_
+        thresh_val = ada.models_[t-1].threshold_
+        # part_pred = ada.partial_predict(test_X, t)
         fig = go.Figure()
-        y_true = np.array(y_true, dtype=np.int)
-        fig.add_trace(
-            go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
-                       marker=dict(color=part_pred, symbols=symbols[test_y])))
+        # y_true = np.array(y_true, dtype=np.int)
+        fig.add_traces([decision_surface(ada.partial_predict, lims[0], lims[1],
+                                        showscale=False, partial=t), go.Scatter(x=train_X[:,0], y=train_X[:,1]
+                                     , mode="markers", showlegend=False,
+                    marker=dict(color=y_true, symbol=symbols[y_true], colorscale=[custom[0], custom[-1]],
+                                line=dict(color="black", width=1)))])
+        # fig.add_trace(
+        #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
+        #                marker=dict(color=part_pred, symbols=symbols[test_y])))
         fig.update_layout(
             title_text="T is = " + str(t))
         fig.show()
@@ -74,7 +80,27 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     # raise NotImplementedError()
 
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
+    lowest_error_size = np.argmin(np.array(test_err))
+    # lowest_pred = ada.partial_predict(test_X, lowest_error_size)
+    #TODO: fix partial loss to fit weights
+    lowest_accuracy = 1 - ada.partial_loss(test_X, lowest_error_size)
+    fig = go.Figure()
+    y_true = np.array(test_y, dtype=np.int)
+    fig.add_traces(
+        [decision_surface(ada.partial_predict, lims[0], lims[1],
+                          showscale=False, partial=lowest_error_size),
+         go.Scatter(x=test_X[:, 0], y=test_X[:, 1]
+                    , mode="markers", showlegend=False,
+                    marker=dict(color=y_true, symbol=symbols[y_true],
+                                colorscale=[custom[0], custom[-1]],
+                                line=dict(color="black", width=1)))])
+    # fig.add_trace(
+    #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
+    #                marker=dict(color=part_pred, symbols=symbols[test_y])))
+    fig.update_layout(
+        title_text="T is = " + str(lowest_error_size) + " accuracy = " + str(lowest_accuracy))
+    fig.show()
+
 
     # Question 4: Decision surface with weighted samples
     raise NotImplementedError()
