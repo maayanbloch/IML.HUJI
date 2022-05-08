@@ -40,41 +40,6 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        # classes, count = np.unique(y, return_counts=True)
-        # n_samples, n_features = X.shape
-
-        #https://sefiks.com/2018/08/27/a-step-by-step-cart-decision-tree-example/
-
-
-
-    #https://programmer.group/python-implementation-of-cart-decision-tree-algorithm-detailed-comments.html
-        #getting first class indexes
-        # y_one = np.argwhere(y == classes[0])
-        # y_two = np.argwhere(y == classes[1])
-        # best_gini = 1
-        # best_split_point = 0
-        # j_of_best_feature = -1
-        # X_trans = X.T
-        # for i in range(n_features):
-        #     feature_vals = np.unique(X_trans[i])
-        #     Gini = {}
-        #     for val in feature_vals:
-        #         left_of_val = np.argwhere(X_trans[i] >= val)
-        #         right_of_val = np.argwhere(X_trans[i] < val)
-        #         prob1 = len(left_of_val) / float(n_samples)
-        #         prob2 = len(right_of_val) / float(n_samples)
-        #         classes1, count1 = np.unique(y[left_of_val], return_counts=True)
-        #         classes2, count2 = np.unique(y[right_of_val], return_counts=True)
-        #         gini_left = 1 - np.sum(np.power(count1, 2))
-        #         gini_right = 1 - np.sum(np.power(count2, 2))
-        #         Gini[val] = (prob1 * gini_left) + (prob2 * gini_right)
-        #         if Gini[val] < best_gini:
-        #             best_gini = Gini[val]
-        #             self.j_ = i
-        #             self.threshold_ = val
-        #             self.sign_ = np.sum(left_of_val) #get positive or negative
-        # self.fitted_ = True
-
         n_samples, n_features = X.shape
         feature_thresh = X[0]
         label_sign = np.sign(feature_thresh)
