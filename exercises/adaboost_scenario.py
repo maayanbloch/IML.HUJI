@@ -48,8 +48,10 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         test_err.append(ada.partial_loss(test_X, test_y, i))
     # fig = go.Figure(data=[train_err, test_err], layout=go.Layout(title=go.layout.Title(test="train and test error")))
     fig = go.Figure()
-    fig.add_trace(go.Scatter(y=train_err, mode="lines"))
-    fig.add_trace(go.Scatter(y=test_err, mode="lines"))
+    fig.add_trace(go.Scatter(y=train_err, mode="lines", name="train error"))
+    fig.add_trace(go.Scatter(y=test_err, mode="lines", name="test error"))
+    fig.update_layout(
+        title_text="noise = " + str(noise))
     fig.show()
 
 
@@ -66,7 +68,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         fig = go.Figure()
         # y_true = np.array(y_true, dtype=np.int)
         fig.add_traces([decision_surface(ada.partial_predict, lims[0], lims[1],
-                                        showscale=False, partial=t), go.Scatter(x=train_X[:,0], y=train_X[:,1]
+                                        showscale=False, partial=t), go.Scatter(x=test_X[:,0], y=test_X[:,1]
                                      , mode="markers", showlegend=False,
                     marker=dict(color=y_true, symbol=symbols[y_true], colorscale=[custom[0], custom[-1]],
                                 line=dict(color="black", width=1)))])
@@ -74,7 +76,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
         #                marker=dict(color=part_pred, symbols=symbols[test_y])))
         fig.update_layout(
-            title_text="T is = " + str(t))
+            title_text="T is = " + str(t) + " noise = " + str(noise))
         fig.show()
 
     # raise NotImplementedError()
@@ -83,7 +85,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     lowest_error_size = np.argmin(np.array(test_err))
     # lowest_pred = ada.partial_predict(test_X, lowest_error_size)
     #TODO: fix partial loss to fit weights
-    lowest_accuracy = 1 - ada.partial_loss(test_X, lowest_error_size)
+    lowest_accuracy = 1 - ada.partial_loss(test_X, test_y,lowest_error_size)
     fig = go.Figure()
     y_true = np.array(test_y, dtype=np.int)
     fig.add_traces(
@@ -98,14 +100,31 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
     #                marker=dict(color=part_pred, symbols=symbols[test_y])))
     fig.update_layout(
-        title_text="T is = " + str(lowest_error_size) + " accuracy = " + str(lowest_accuracy))
+        title_text="T is = " + str(lowest_error_size) + " accuracy = " + str(lowest_accuracy) + " noise = " + str(noise))
     fig.show()
 
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    D = 5* ada.D_/np.max(ada.D_)
+    fig = go.Figure()
+    y_true = np.array(train_y, dtype=np.int)
+    fig.add_traces(
+        [decision_surface(ada.partial_predict, lims[0], lims[1],
+                          showscale=False, partial=n_learners),
+         go.Scatter(x=train_X[:, 0], y=train_X[:, 1]
+                    , mode="markers", showlegend=False,
+                    marker=dict(size=D,color=y_true, symbol=symbols[y_true],
+                                colorscale=[custom[0], custom[-1]],
+                                line=dict(color="black", width=1)))])
+    # fig.add_trace(
+    #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
+    #                marker=dict(color=part_pred, symbols=symbols[test_y])))
+    fig.update_layout(
+        title_text="T is = " + str(n_learners) + " noise = " + str(noise))
+    fig.show()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(noise=0)
+    fit_and_evaluate_adaboost(noise=0.4)
