@@ -51,7 +51,7 @@ class DecisionStump(BaseEstimator):
             feature_thresh[f] = f_threshs_minus[0]
             loss[f] = f_threshs_minus[1]
             label_sign[f] = -1
-            if f_threshs_one[1] < f_threshs_minus[1]:
+            if f_threshs_one[1] <= f_threshs_minus[1]:
                 feature_thresh[f] = f_threshs_one[0]
                 loss[f] = f_threshs_one[1]
                 label_sign[f] = 1
@@ -124,11 +124,15 @@ class DecisionStump(BaseEstimator):
         F = np.sum(np.abs(labels[np.argwhere(np.sign(labels) != sign)]))
         loss = n_samples
         thresh = sorted_values[0]
-        for thresh_opt in range(len(sorted_values)):
+        for thresh_opt in range(len(sorted_values)-1):
             F = F + (sign)*sorted_labels[thresh_opt]
             if (F < loss):
                 loss = F
-                thresh = sorted_values[thresh_opt]
+                thresh = sorted_values[thresh_opt+1]
+        F = F +(sign)*sorted_labels[-1]
+        if (F < loss):
+            loss = F
+            thresh = (sorted_values[-1] + 0.0001)
         return thresh, loss
 
 
@@ -150,10 +154,7 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        n_samples = len(X)
         y_pred = self._predict(X)
         pred_err = np.argwhere(np.sign(y) != y_pred)
-        #TODO: is normalised, check
         loss = np.sum(np.abs(y[pred_err]))
-        # loss = misclassification_error(y, y_pred)
         return loss

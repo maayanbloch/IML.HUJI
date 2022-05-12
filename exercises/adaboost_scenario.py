@@ -7,11 +7,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-import matplotlib.pyplot as plt
-# from utils import decision_surface
-from matplotlib.colors import ListedColormap
-
-
 def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate a dataset in R^2 of specified size
@@ -38,92 +33,6 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
     y[np.random.choice(n, int(noise_ratio * n))] *= -1
     return X, y
 
-
-# def decision_boundaries(classifier, X, y, num_classifiers=1, weights=None):
-#     """
-#     Plot the decision boundaries of a binary classfiers over X \subseteq R^2
-#
-#     Parameters
-#     ----------
-#     classifier : a binary classifier, implements classifier.predict(X)
-#     X : m*2 matrix whose rows correspond to the data points
-#     y : m dimensional vector of binary labels
-#     title_str : optional title
-#     weights : weights for plotting X
-#     """
-#     cm = ListedColormap(['#AAAAFF', '#FFAAAA'])
-#     cm_bright = ListedColormap(['#0000FF', '#FF0000'])
-#     h = .003  # step size in the mesh
-#     # Plot the decision boundary.
-#     x_min, x_max = X[:, 0].min() - .2, X[:, 0].max() + .2
-#     y_min, y_max = X[:, 1].min() - .2, X[:, 1].max() + .2
-#     xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-#                          np.arange(y_min, y_max, h))
-#     # Z = classifier.predict(np.c_[xx.ravel(), yy.ravel()], num_classifiers)
-#     Z = classifier.partial_predict(np.c_[xx.ravel(), yy.ravel()],
-#                                    num_classifiers)
-#     # Put the result into a color plot
-#     Z = Z.reshape(xx.shape)
-#     plt.pcolormesh(xx, yy, Z, cmap=cm)
-#     # Plot also the training points
-#     if weights is not None:
-#         plt.scatter(X[:, 0], X[:, 1], c=y, s=weights, cmap=cm_bright)
-#     else:
-#         plt.scatter(X[:, 0], X[:, 1], c=y, cmap=cm_bright)
-#     plt.xlim(xx.min(), xx.max())
-#     plt.ylim(yy.min(), yy.max())
-#     plt.xticks([])
-#     plt.yticks([])
-#     plt.title(f'num classifiers = {num_classifiers}')
-#     plt.draw()
-
-# def plot_adaboost(adaBoost, test_X, test_y, T, lims):
-#     symbols = np.array(["circle", "x"])
-#     title = "Adaboost Algorithm"
-#
-#     fig = make_subplots(rows=2, cols=2,
-#                         subplot_titles=[rf"$ Adaboost with \textbf{{{m}}}$"
-#                                         for m in T],
-#                         horizontal_spacing=0.01, vertical_spacing=.03)
-#     for i, t in enumerate(T):
-#         def pred(X):
-#             return adaBoost.partial_predict(X, t)
-#
-#         fig.add_traces(
-#             [decision_surface(pred, lims[0], lims[1], showscale=False),
-#              go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers",
-#                         showlegend=False,
-#                         marker=dict(color=test_y, symbol=symbols[
-#                             test_y.astype(int)],
-#                                     colorscale=[custom[0],
-#                                                 custom[-1]],
-#                                     line=dict(color="black",
-#                                               width=1)))],
-#             rows=(i // 2) + 1, cols=(i % 2) + 1)
-#     fig.update_layout(
-#         title=rf"$\textbf{{(2) Decision Boundaries Of Models - {title} Dataset}}$",
-#         margin=dict(t=100)) \
-#         .update_xaxes(visible=False).update_yaxes(visible=False)
-#
-#     # fig.show() #todo
-#     fig.write_image('Q2_adaboost.png')
-
-#
-# def plot_errors_afo_learners(n_learners, test_X, test_y, train_X, train_y):
-#     training_errors, test_errors = [], []
-#     adaBoost = AdaBoost(DecisionStump, n_learners)
-#     adaBoost.fit(train_X, train_y)
-#     ensemble = np.arange(1, n_learners)
-#     for l in ensemble:
-#         training_errors.append(adaBoost.partial_loss(train_X, train_y, l))
-#         test_errors.append(adaBoost.partial_loss(test_X, test_y, l))
-#     plt.plot(ensemble, training_errors, label='Train errors', markersize=3)
-#     plt.plot(ensemble, test_errors, label='Test errors')
-#     plt.title('Adaboost Algorithm error as function of iterations')
-#     plt.legend()
-#     # plt.show()  #todo: return it
-#     return adaBoost, test_errors
-
 def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
@@ -132,13 +41,12 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     ada = AdaBoost(wl, n_learners).fit(train_X, train_y)
     train_err = []
     test_err = []
-    for i in range(1,n_learners):
-        train_err.append(ada.partial_loss(train_X, train_y, i))
-        test_err.append(ada.partial_loss(test_X, test_y, i))
-    # fig = go.Figure(data=[train_err, test_err], layout=go.Layout(title=go.layout.Title(test="train and test error")))
+    for i in range(n_learners):
+        train_err.append(ada.partial_loss(train_X, train_y, i+1))
+        test_err.append(ada.partial_loss(test_X, test_y, i+1))
     fig = go.Figure()
-    fig.add_trace(go.Scatter(y=train_err, mode="lines", name="train error"))
-    fig.add_trace(go.Scatter(y=test_err, mode="lines", name="test error"))
+    fig.add_trace(go.Scatter(y=train_err, mode="markers+lines", name="train error"))
+    fig.add_trace(go.Scatter(y=test_err, mode="markers+lines", name="test error"))
     fig.update_layout(
         title_text="noise = " + str(noise))
     fig.show()
@@ -148,39 +56,28 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
     symbols = np.array(["circle", "square", "triangle-up"])
-    # test_for_symb = np.array(test_y +1, dtype=np.int)
     y_true = np.array(test_y, dtype=np.int)
     for t in T:
-        thresh_axis = ada.models_[t-1].j_
-        thresh_val = ada.models_[t-1].threshold_
-        # part_pred = ada.partial_predict(test_X, t)
         def pred(X):
             return ada.partial_predict(X, t)
 
         fig = go.Figure()
-        # y_true = np.array(y_true, dtype=np.int)
         fig.add_traces([decision_surface(pred, lims[0], lims[1],
                                         showscale=False), go.Scatter(x=test_X[:,0], y=test_X[:,1]
                                      , mode="markers", showlegend=False,
                     marker=dict(color=y_true, symbol=symbols[y_true], colorscale=[custom[0], custom[-1]],
                                 line=dict(color="black", width=1)))])
-        # fig.add_trace(
-        #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
-        #                marker=dict(color=part_pred, symbols=symbols[test_y])))
         fig.update_layout(
             title_text="T is = " + str(t) + " noise = " + str(noise))
         fig.show()
 
-    # raise NotImplementedError()
 
     # Question 3: Decision surface of best performing ensemble
-    lowest_error_size = np.min(np.argmin(np.array(test_err)))
+    lowest_error_size = np.min(np.argmin(np.array(test_err))) + 1
 
     def pred(X):
         return ada.partial_predict(X, lowest_error_size)
-    # lowest_pred = ada.partial_predict(test_X, lowest_error_size)
-    #TODO: fix partial loss to fit weights
-    lowest_accuracy = 1 - test_err[lowest_error_size]
+    lowest_accuracy = 1 - test_err[lowest_error_size - 1]
     fig = go.Figure()
     y_true = np.array(test_y, dtype=np.int)
     fig.add_traces(
@@ -191,9 +88,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
                     marker=dict(color=y_true, symbol=symbols[y_true],
                                 colorscale=[custom[0], custom[-1]],
                                 line=dict(color="black", width=1)))])
-    # fig.add_trace(
-    #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
-    #                marker=dict(color=part_pred, symbols=symbols[test_y])))
     fig.update_layout(
         title_text="T is = " + str(lowest_error_size) + " accuracy = " + str(lowest_accuracy) + " noise = " + str(noise))
     fig.show()
@@ -211,9 +105,6 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
                     marker=dict(size=D,color=y_true, symbol=symbols[y_true],
                                 colorscale=[custom[0], custom[-1]],
                                 line=dict(color="black", width=1)))])
-    # fig.add_trace(
-    #     go.Scatter(mode='markers', x=test_X.T[0], y=test_X.T[1],
-    #                marker=dict(color=part_pred, symbols=symbols[test_y])))
     fig.update_layout(
         title_text="T is = " + str(n_learners) + " noise = " + str(noise))
     fig.show()
@@ -226,50 +117,3 @@ if __name__ == '__main__':
 
 
 
-    #
-    #
-    # def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
-    #                               test_size=500):
-    #     (train_X, train_y), (test_X, test_y) = generate_data(train_size,
-    #                                                          noise), generate_data(
-    #         test_size, noise)
-    #
-    #     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    #     adaBoost, test_errors = plot_errors_afo_learners(n_learners, test_X,
-    #                                                      test_y, train_X,
-    #                                                      train_y)
-    #
-    #     # Question 2: Plotting decision surfaces
-    #     T = [5, 50, 100, 250]
-    #     lims = np.array([np.r_[train_X, test_X].min(axis=0),
-    #                      np.r_[train_X, test_X].max(axis=0)]).T + np.array(
-    #         [-.1, .1])
-    #
-    #     # lims = np.array([X.min(axis=0), X.max(axis=0)]).T + np.array([-.4, .4])
-    #
-    #     plot_adaboost(adaBoost, test_X, test_y, T, lims)
-    #
-    #     # Question 3: Decision surface of best performing ensemble
-    #     lower_test_error_ind = np.min(np.argmin(test_errors))
-    #     best_ensemble_size = test_errors[lower_test_error_ind]
-    #     # decidion_boundaries_new(adaBoost, test_X, test_y, lower_test_error_ind)
-    #     # decision_boundaries(adaBoost, test_X, test_y, lower_test_error_ind)
-    #     # plt.show()  # todo
-    #
-    #     # Question 4: Decision surface with weighted samples
-    #     D_t = adaBoost.D_
-    #     normalized_D_t = D_t / np.max(D_t) * 5
-    #
-    #     # Question 5: graphs as in Q1, Q4
-    #     noise_n = 0.4
-    #     (train_X_n, train_y_n), (test_X_n, test_y_n) = generate_data(
-    #         train_size,
-    #         noise_n), generate_data(test_size, noise)
-    #     # adaBoost, test_errors = plot_errors_afo_learners(n_learners, test_X,
-    #     #                                                  test_y, train_X, train_y)
-    #
-    #
-    # if _name_ == '_main_':
-    #     np.random.seed(0)
-    #     noise = 0
-    #     fit_and_evaluate_adaboost(noise)
