@@ -51,7 +51,7 @@ class DecisionStump(BaseEstimator):
             feature_thresh[f] = f_threshs_minus[0]
             loss[f] = f_threshs_minus[1]
             label_sign[f] = -1
-            if f_threshs_one[1] <= f_threshs_minus[1]:
+            if f_threshs_one[1] < f_threshs_minus[1]:
                 feature_thresh[f] = f_threshs_one[0]
                 loss[f] = f_threshs_one[1]
                 label_sign[f] = 1
@@ -120,19 +120,24 @@ class DecisionStump(BaseEstimator):
         n_samples = len(values)
         sorted_args = np.argsort(values)
         sorted_values = values[sorted_args]
-        sorted_labels = labels[sorted_args]
-        F = np.sum(np.abs(labels[np.argwhere(np.sign(labels) != sign)]))
-        loss = n_samples
+        sorted_labels = np.sign(labels[sorted_args])
+        sorted_D = labels[sorted_args] / np.sum(np.abs(labels))
+        F = np.sum(np.abs(sorted_D[np.argwhere(sorted_labels != sign)]))
+        loss = F
         thresh = sorted_values[0]
-        for thresh_opt in range(len(sorted_values)-1):
-            F = F + (sign)*sorted_labels[thresh_opt]
+        for thresh_opt in range(1,len(sorted_values)):
+            F = F + (sign)*sorted_D[thresh_opt-1]
             if (F < loss):
                 loss = F
-                thresh = sorted_values[thresh_opt+1]
-        F = F +(sign)*sorted_labels[-1]
-        if (F < loss):
+                thresh = sorted_values[thresh_opt]
+        F = F + (sign)*sorted_D[-1]
+        if(loss > F):
             loss = F
-            thresh = (sorted_values[-1] + 0.0001)
+            thresh = sorted_values[-1]+ 0.000001
+        # F = F +(sign)*sorted_labels[-1]
+        # if (F < loss):
+        #     loss = F
+        #     thresh = (sorted_values[-1] + 0.0001)
         return thresh, loss
 
 
