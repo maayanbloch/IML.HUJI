@@ -1,5 +1,9 @@
 from __future__ import annotations
+<<<<<<< HEAD
 from typing import NoReturn, Tuple
+=======
+from typing import Tuple, NoReturn
+>>>>>>> 072d4a39a901a32c752ab820cf8b7ec30a77b344
 from ...base import BaseEstimator
 import numpy as np
 from ...metrics import misclassification_error
@@ -86,7 +90,10 @@ class DecisionStump(BaseEstimator):
         return y_pred
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 072d4a39a901a32c752ab820cf8b7ec30a77b344
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
         """
         Given a feature vector and labels, find a threshold by which to perform a split
