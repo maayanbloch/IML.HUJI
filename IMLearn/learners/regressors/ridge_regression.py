@@ -2,6 +2,11 @@ from __future__ import annotations
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
+from ...metrics import loss_functions
+
+
+#TODO: check if allowed to import
+from IMLearn.learners.regressors import PolynomialFitting, LinearRegression
 
 
 class RidgeRegression(BaseEstimator):
@@ -43,6 +48,28 @@ class RidgeRegression(BaseEstimator):
         self.include_intercept_ = include_intercept
         self.lam_ = lam
 
+    def __add_ones(self, X: np.ndarray) -> np.ndarray:
+        num_samples = len(X)
+        if self.include_intercept_:
+            X = np.c_[np.ones((num_samples, 1)), X]
+        return X
+
+    def get_X_y_lam(self, X, y = None):
+        num_samples = len(X) + self.include_intercept_
+        ident_mat = np.identity(num_samples)
+        ident_mat_lam = ident_mat * np.sqrt(self.lam_)
+        if (self.include_intercept_):
+            X = np.c_[np.ones((num_samples, 1)), X]
+            ident_mat_lam[0, 0] = 0
+        if (self.lam_ != 0):
+            X = X / ident_mat_lam
+            # TODO: check value y is divided by (ident mat) - and check the shape of the division
+            if (y != None):
+                y = y/ident_mat
+        return X, y
+    
+
+
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit Ridge regression model to given samples
@@ -59,7 +86,11 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
+        #TODO: check if right
+        X_lam, y_lam = self.get_X_y_lam(X, y)
+        self.coefs_ = LinearRegression.fit(X_lam, y_lam)
+        self.fitted_ = True
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -75,7 +106,8 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        X_lam, empty_val = self.get_X_y_lam(X)
+        return X_lam @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -94,4 +126,6 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
+        y_pred = self._predict(X)
+        return loss_functions.mean_square_error(y, y_pred)
         raise NotImplementedError()

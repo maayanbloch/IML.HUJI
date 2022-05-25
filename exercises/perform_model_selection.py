@@ -43,13 +43,16 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     np.random.shuffle(shuffled_indexes)
     #TODO: use my implementation of split to test in utils
     train_ind, test_ind = np.split(shuffled_indexes, [int(np.round(n_samples*2/3))])
-    true_y = calc_f(s)
+    true_y = calc_f(s).flatten()
     noise_vec = np.random.normal(0, noise, n_samples)
+    noisy_y = true_y + noise_vec
     color_array = np.ones(n_samples)
     color_array[train_ind] = 0
     fig = go.Figure()
     fig.add_trace(
-        go.Scatter(y=true_y.flatten(), mode="markers+lines", name="no noise y",  marker=dict(color=color_array)))
+        go.Scatter(y=true_y, mode="lines", name="no noise y"))
+    fig.add_trace(
+        go.Scatter(y=noisy_y, mode="markers", name="noise y",  marker=dict(color=color_array)))
     fig.update_layout(
         title_text="noise = " + str(noise))
     fig.show()
@@ -57,8 +60,6 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
     train_err = np.empty(11)
     valid_err = np.empty(11)
-    true_y = true_y.reshape(n_samples)
-    noisy_y = true_y + noise_vec
     k_vec = np.arange(10)
     for k in range(11):
         poly_model = PolynomialFitting(k)
@@ -84,7 +85,7 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     k_poly_model.fit(s[train_ind].flatten(), noisy_y[train_ind].flatten())
     print("best k = " + str(best_k) + " noise = " + str(noise))
     test_err = k_poly_model.loss(s[test_ind].flatten(), noisy_y[test_ind].flatten())
-    print("test err = " + str(test_err)  + " noise = " + str(noise))
+    print("test err = " + str(np.round(test_err, 2))  + " noise = " + str(noise))
     print("validation err = " + str(valid_err[best_k])  + " noise = " + str(noise))
 
 
@@ -113,5 +114,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    select_polynomial_degree()
+    # select_polynomial_degree()
+    # select_polynomial_degree(noise=0)
+    select_polynomial_degree(n_samples=1500, noise=10)
     raise NotImplementedError()
