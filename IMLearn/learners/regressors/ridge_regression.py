@@ -54,20 +54,21 @@ class RidgeRegression(BaseEstimator):
             X = np.c_[np.ones((num_samples, 1)), X]
         return X
 
-    def get_X_y_lam(self, X, y = None):
-        num_samples = len(X) + self.include_intercept_
-        ident_mat = np.identity(num_samples)
-        ident_mat_lam = ident_mat * np.sqrt(self.lam_)
+    def get_X_lam(self, X):
+        num_samples, n_features = X.shape
+        ident_mat_lam = np.identity(n_features + self.include_intercept_) * np.sqrt(self.lam_)
         if (self.include_intercept_):
             X = np.c_[np.ones((num_samples, 1)), X]
             ident_mat_lam[0, 0] = 0
-        if (self.lam_ != 0):
-            X = X / ident_mat_lam
-            # TODO: check value y is divided by (ident mat) - and check the shape of the division
-            if (y != None):
-                y = y/ident_mat
-        return X, y
-    
+        #TODO: check that X_lam is right dims
+        X_lam = np.stack((X, ident_mat_lam))
+        return X_lam
+
+    def get_y_lam(self, y, n_features):
+        zeros_vec_d = np.zeros(n_features + self.include_intercept_)
+        #TODO: check that y_lam is right dims
+        y_lam = np.concatenate((y, zeros_vec_d), axis=None)
+        return y_lam
 
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
@@ -87,7 +88,9 @@ class RidgeRegression(BaseEstimator):
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
         #TODO: check if right
-        X_lam, y_lam = self.get_X_y_lam(X, y)
+        num_samples, n_features = X.shape
+        X_lam = self.get_X_lam(X)
+        y_lam = self.get_y_lam(y, n_features)
         self.coefs_ = LinearRegression.fit(X_lam, y_lam)
         self.fitted_ = True
 
@@ -106,8 +109,11 @@ class RidgeRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        X_lam, empty_val = self.get_X_y_lam(X)
-        return X_lam @ self.coefs_
+        # X_lam = self.get_X_lam(X)
+        num_samples, n_features = X.shape
+        if (self.include_intercept_):
+            X = np.c_[np.ones((num_samples, 1)), X]
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -126,6 +132,6 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
+        #TODO: check loss function
         y_pred = self._predict(X)
         return loss_functions.mean_square_error(y, y_pred)
-        raise NotImplementedError()

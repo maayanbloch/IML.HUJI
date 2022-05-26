@@ -36,7 +36,6 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     """
     # Question 1 - Generate dataset for model f(x)=(x+3)(x+2)(x+1)(x-1)(x-2) + eps for eps Gaussian noise
     # and split into training- and testing portions
-    x_range = [-1.2, 2]
     s = np.linspace(-1.2,2, num=n_samples, endpoint=True)
     s = s.reshape((n_samples, 1))
     shuffled_indexes = np.arange(n_samples)
