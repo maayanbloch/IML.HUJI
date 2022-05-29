@@ -59,9 +59,9 @@ class RidgeRegression(BaseEstimator):
         ident_mat_lam = np.identity(n_features + self.include_intercept_) * np.sqrt(self.lam_)
         if (self.include_intercept_):
             X = np.c_[np.ones((num_samples, 1)), X]
-            ident_mat_lam[0, 0] = 0
+            ident_mat_lam[0][0] = 0
         #TODO: check that X_lam is right dims
-        X_lam = np.stack((X, ident_mat_lam))
+        X_lam = np.vstack((X, ident_mat_lam))
         return X_lam
 
     def get_y_lam(self, y, n_features):
@@ -91,7 +91,7 @@ class RidgeRegression(BaseEstimator):
         num_samples, n_features = X.shape
         X_lam = self.get_X_lam(X)
         y_lam = self.get_y_lam(y, n_features)
-        self.coefs_ = LinearRegression.fit(X_lam, y_lam)
+        self.coefs_ = LinearRegression(include_intercept=False).fit(X_lam, y_lam).coefs_
         self.fitted_ = True
 
 
