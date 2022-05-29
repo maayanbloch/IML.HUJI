@@ -1,6 +1,8 @@
 from __future__ import annotations
 import numpy as np
 import pandas as pd
+# from pandas.io import pickle
+import pickle
 from sklearn import datasets
 from IMLearn.metrics import mean_square_error
 from IMLearn.utils import split_train_test
@@ -88,6 +90,15 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     print("validation err = " + str(valid_err[best_k])  + " noise = " + str(noise))
 
 
+def load_data(n_samples):
+    data_frame = pickle.load(open("./diabetes", "rb"))
+    X = data_frame.drop(y, axis=1)
+    y = data_frame.filter(items=y)['y'].squeeze()
+    train_p = 50/len(X)
+    #TODO: get split train test function
+    train_X, train_y, test_X, test_y = split_train_test(data_frame, y, train_proportion=train_p)
+    return train_X, train_y, test_X, test_y
+
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
     Using sklearn's diabetes dataset use cross-validation to select the best fitting regularization parameter
@@ -102,13 +113,61 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
         Number of regularization parameter values to evaluate for each of the algorithms
     """
     # Question 6 - Load diabetes dataset and split into training and testing portions
-    raise NotImplementedError()
+    train_X, train_y, test_X, test_y = load_data(n_samples)
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    raise NotImplementedError()
+    #TODO: find relevant lam values
+    ridge_lam_vals = np.linspace(0, 400, num=n_evaluations)
+    lasso_lam_vals = np.linspace(0, 400, num=n_evaluations)
+
+    ridge_train_loss = np.empty(n_evaluations)
+    ridge_val_loss = np.empty(n_evaluations)
+    lasso_train_loss = np.empty(n_evaluations)
+    lasso_val_loss = np.empty(n_evaluations)
+
+    for i in range(n_evaluations):
+        ridge_model = RidgeRegression(lam=ridge_lam_vals[i])
+        lasso_model = Lasso(alpha=lasso_lam_vals[i])
+        ridge_train_loss[i], ridge_val_loss[i] = cross_validate(ridge_model, train_X, train_y, mean_square_error, cv=5)
+        lasso_train_loss[i], lasso_val_loss[i] = cross_validate(lasso_model, train_X, train_y, mean_square_error ,cv=5)
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(x=ridge_lam_vals, y=ridge_train_loss, mode="markers+lines", name="train error"))
+    fig.add_trace(
+        go.Scatter(x=ridge_lam_vals, y=ridge_val_loss, mode="markers+lines",
+                   name="validation error"))
+    fig.update_layout(
+        title_text="Ridge train and validation err")
+    fig.show()
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(x=lasso_lam_vals, y=lasso_train_loss, mode="markers+lines",
+                   name="train error"))
+    fig.add_trace(
+        go.Scatter(x=lasso_lam_vals, y=lasso_val_loss, mode="markers+lines",
+                   name="validation error"))
+    fig.update_layout(
+        title_text="Lasso train and validation err")
+    fig.show()
+
+
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    raise NotImplementedError()
+    best_lam_ridge = ridge_lam_vals[np.argmin(ridge_val_loss)]
+    best_lam_lasso = lasso_lam_vals[np.argmin(lasso_val_loss)]
+    best_ridge = RidgeRegression(lam=best_lam_ridge)
+    best_lasso = Lasso(alpha=best_lam_lasso)
+    best_ridge.fit(train_X, train_y)
+    best_lasso.fit(train_X, train_y)
+    #TODO: find least square loss i implemented
+    ridge_test_error = best_ridge.loss(test_X, test_y)
+    lasso_test_error = best_lasso.loss(test_X, test_y)
+    print("Ridge test error = " + str(
+        ridge_test_error) + " for lamda value " + str(best_lam_ridge))
+    print("Lasso test error = " + str(
+        lasso_test_error) + " for lamda value " + str(best_lam_lasso))
 
 
 if __name__ == '__main__':
