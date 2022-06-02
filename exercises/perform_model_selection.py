@@ -120,6 +120,8 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     lasso_val_loss = np.empty(n_evaluations)
     train_X_arr = train_X.to_numpy()
     train_y_arr = train_y.to_numpy()
+    test_X_arr = test_X.to_numpy()
+    test_y_arr = test_y.to_numpy()
     for i in range(n_evaluations):
         ridge_model = RidgeRegression(lam=ridge_lam_vals[i])
         lasso_model = Lasso(alpha=lasso_lam_vals[i])
@@ -143,16 +145,20 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     best_lam_lasso = lasso_lam_vals[np.argmin(lasso_val_loss)]
     best_ridge = RidgeRegression(lam=best_lam_ridge)
     best_lasso = Lasso(alpha=best_lam_lasso)
-    best_ridge.fit(train_X, train_y)
-    best_lasso.fit(train_X, train_y)
-    #TODO: find least square loss i implemented
-    ridge_test_error = best_ridge.loss(test_X, test_y)
-    lasso_best_y = best_lasso.predict(test_X)
-    lasso_test_error = mean_square_error(lasso_best_y, test_y)
+    linear_reg = LinearRegression()
+    linear_reg.fit(train_X_arr, train_y_arr)
+    best_ridge.fit(train_X_arr, train_y_arr)
+    best_lasso.fit(train_X_arr, train_y_arr)
+    ridge_test_error = best_ridge.loss(test_X_arr, test_y_arr)
+    lasso_best_y = best_lasso.predict(test_X_arr)
+    lasso_test_error = mean_square_error(lasso_best_y, test_y_arr)
+    linear_test_err = linear_reg.loss(test_X_arr, test_y_arr)
     print("Ridge test error = " + str(
         ridge_test_error) + " for lamda value " + str(best_lam_ridge))
     print("Lasso test error = " + str(
         lasso_test_error) + " for lamda value " + str(best_lam_lasso))
+    print("Least Square Reg test error = " + str(
+        linear_test_err))
 
 
 if __name__ == '__main__':

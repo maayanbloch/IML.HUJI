@@ -5,8 +5,7 @@ import numpy as np
 from ...metrics import loss_functions
 
 
-#TODO: check if allowed to import
-from IMLearn.learners.regressors import PolynomialFitting, LinearRegression
+from IMLearn.learners.regressors import LinearRegression
 
 
 class RidgeRegression(BaseEstimator):
@@ -60,13 +59,11 @@ class RidgeRegression(BaseEstimator):
         if (self.include_intercept_):
             X = np.c_[np.ones((num_samples, 1)), X]
             ident_mat_lam[0][0] = 0
-        #TODO: check that X_lam is right dims
         X_lam = np.vstack((X, ident_mat_lam))
         return X_lam
 
     def get_y_lam(self, y, n_features):
         zeros_vec_d = np.zeros(n_features + self.include_intercept_)
-        #TODO: check that y_lam is right dims
         y_lam = np.concatenate((y, zeros_vec_d), axis=None)
         return y_lam
 
@@ -87,7 +84,6 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        #TODO: check if right
         num_samples, n_features = X.shape
         X_lam = self.get_X_lam(X)
         y_lam = self.get_y_lam(y, n_features)
@@ -132,6 +128,5 @@ class RidgeRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        #TODO: check loss function
         y_pred = self._predict(X)
         return loss_functions.mean_square_error(y, y_pred)
